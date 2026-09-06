@@ -1,0 +1,31 @@
+# Docker Engine in an Arch Linux SmolVM.
+#
+# Create the machine:
+#
+# smolvm machine create --name docker-arch \
+#   --smolfile arch-docker.smolfile \
+#   --net-backend virtio-net
+#
+# NB: virtio-net provides Docker with a more conventional virtual network interface
+
+# multi-arch image
+image = "docker.io/menci/archlinuxarm:latest"
+
+cpus = 4
+memory = 8192
+net = true
+storage = 20
+
+# Expose the guest's /var/run/docker.sock to the host as a Unix socket.
+docker_socket = true
+
+# run once when VM is created
+init = [
+  # Install docker
+  "pacman -Syu --noconfirm docker",
+
+  # Docker's data directory must be on the ext4-backed /storage disk
+  # to avoid overlay on overlay
+  "mkdir -p /storage/docker /var/lib/docker",
+  "mount --bind /storage/docker /var/lib/docker",
+]
