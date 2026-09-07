@@ -2,11 +2,7 @@
 #
 # Create the machine:
 #
-# smolvm machine create --name atelier --net-backend virtio-net \
-#   --smolfile atelier.smolfile
-#
-# Tailscale's normal Linux mode needs virtio-net for a real guest NIC and
-# default route. smolvm does not currently support net_backend in a Smolfile.
+# smolvm machine create --name atelier --smolfile atelier.smolfile
 
 # this image has systemd
 image = "buluma/docker-molecule-images:ubuntu2604"
@@ -16,16 +12,18 @@ memory = 8192
 net = true
 storage = 40
 
+# expose Docker's socket and Atelier's HTTP service to the host
 docker_socket = true
+
+[dev]
+ports = ["8095:80"]
+
+# user = "docker"
 
 # Run on every VM start.
 init = [
   "apt-get update",
   # "apt-get install -y curl docker.io",
-  # Recreate the TUN device on the temporary /dev filesystem; Tailscale needs it.
-  "printf '%s\n' 'd /dev/net 0755 root root -' 'c /dev/net/tun 0600 root root - 10:200' > /etc/tmpfiles.d/tailscale-tun.conf",
-  # Apply the rule now, so Tailscale can start during this provisioning run.
-  "systemd-tmpfiles --create /etc/tmpfiles.d/tailscale-tun.conf",
   "mkdir -p /storage/docker /var/lib/docker /storage/containerd /var/lib/containerd",
   # Docker and containerd state must be on the ext4-backed /storage disk to avoid overlay on overlay.
   "grep -qxF '/storage/docker /var/lib/docker none bind 0 0' /etc/fstab || echo '/storage/docker /var/lib/docker none bind 0 0' >> /etc/fstab",
