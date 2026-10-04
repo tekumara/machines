@@ -2,11 +2,7 @@
 #
 # Create the machine:
 #
-# smolvm machine create --name docker-arch \
-#   --smolfile arch-docker.smolfile \
-#   --net-backend virtio-net
-#
-# NB: virtio-net provides Docker with a more conventional virtual network interface
+# smolvm machine create --name docker-arch --smolfile arch-docker.smolfile
 
 # multi-arch image
 image = "docker.io/menci/archlinuxarm:latest"
@@ -14,6 +10,8 @@ image = "docker.io/menci/archlinuxarm:latest"
 cpus = 4
 memory = 8192
 net = true
+# virtio-net provides Docker with a more conventional virtual network interface
+net_backend = "virtio-net"
 storage = 20
 
 # Expose the guest's /var/run/docker.sock to the host as a Unix socket.
@@ -26,6 +24,8 @@ init = [
 
   # Docker's data directory must be on the ext4-backed /storage disk
   # to avoid overlay on overlay
-  "mkdir -p /storage/docker /var/lib/docker",
-  "mount --bind /storage/docker /var/lib/docker",
+  "mkdir -p /storage/docker /var/lib/docker /storage/containerd /var/lib/containerd",
+  # Docker and containerd state must be on the ext4-backed /storage disk to avoid overlay on overlay.
+  "grep -qxF '/storage/docker /var/lib/docker none bind 0 0' /etc/fstab || echo '/storage/docker /var/lib/docker none bind 0 0' >> /etc/fstab",
+  "grep -qxF '/storage/containerd /var/lib/containerd none bind 0 0' /etc/fstab || echo '/storage/containerd /var/lib/containerd none bind 0 0' >> /etc/fstab",
 ]
